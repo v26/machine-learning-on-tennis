@@ -26,46 +26,38 @@ private
 
 # Sort matches by attributes set as a criteria
 def sort_by_attr_set!(matches, attr_set)
-#  puts matches.headers
-#  puts
-
   # Sorted matches to return
-  sorted_matches = Array.new(matches.size, [])
+  sorted_matches = Array.new(matches.size, Array.new)
 
-  # Headers for a new file
-  headers = matches.headers[0..30]
+  tourney_dates = matches.map { |match| match["tourney_date"] }.uniq
+  puts tourney_dates.inspect
 
-  # per = period (e.g. last 2 weeks),, df = double faults,
-  # 1st_in = first serve in, %w_1st = % of first serve won,
-  # %w_2nd = % of second serve won.
-  add_headers = ["1/rank_diff", "1/rank_p_diff",
-		 "1/age_diff", "1/hgt_diff",
-		 "1/aces_last_diff", "1/aces_per_avg_diff",
-		 "1/aces_per_max_diff", "1/aces_per_min_diff",
-		 "1/df_last_diff", "1/df_per_avg_diff",
-		 "1/df_per_max_diff", "1/df_per_min_diff",
-                 "1/1st_in_last_diff", "1/1st_in_per_avg_diff",
-		 "1/1st_in_per_max_diff", "1/1st_in_per_min_diff",
-		 "1/%w_1st_last_diff", "1/%w_1st_per_avg_diff",
-		 "1/%w_1st_per_max_diff", "1/%w_1st_per_min_diff",
-		 "1/%w_2nd_last_diff", "1/%w_2nd_per_avg_diff",
-		 "1/%w_2nd_per_max_diff", "1/%w_2nd_per_min_diff"]
+  tourney_ids = Array.new(tourney_dates.size)
+#  puts tourney_dates_and_ids.inspect
 
-  add_headers.each do |new_header|
-    headers << new_header
-  end
+#  (0...tourney_dates_and_ids.size).each do |i|
+#    tourney_dates_and_ids[i] = Array.new << tourney_dates[i]
+#  end
 
-  # Add headers to a new file 
-  sorted_matches[0] = headers
+#  puts tourney_dates_and_ids.inspect
+  tourney_date_ind = 0
+  matches.each do |match|
+    tourney_date_ind += 1 if match["tourney_date"] != tourney_dates[tourney_date_ind]
+    date = tourney_dates[tourney_date_ind]
+    tourney_ids[tourney_date_ind] = Array.new if tourney_ids[tourney_date_ind] == nil
+    id = match["tourney_id"]
+    tourney_ids[tourney_date_ind] << id if 
+        tourney_ids[tourney_date_ind][0] == nil ||
+        !tourney_ids[tourney_date_ind].include?(id)
 
-  matches.each do |row|
-
-    curr_date = row['tourney_date'].to_i
-#    puts curr_date
 
   end
+  puts tourney_ids.inspect
+  puts tourney_ids.size
 
-#  puts sorted_matches[0]
+  puts
+  puts tourney_dates.size
+
 #  puts sorted_matches.size
 #  puts sorted_matches.inspect
 end

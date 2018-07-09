@@ -1,65 +1,53 @@
-require '../../Training/RUBY/lib/2_2_merge_sort/merge_sort.rb'
-require 'csv'
+require 'smarter_csv'
 
 def restructure_data
-  # Read entire csv
-  matches = CSV.read('../data/match_data_downloaded/atp_matches_1993.csv', headers: true)
-  
-  # Sort by descending date
-  merge_sort!(matches) { |match| -match['tourney_date'].to_i }
+  path = "../data/match_data_downloaded"
+  file = "atp_matches_1993.csv"
+  dir_sep = "/"
 
-  # Set of tourney rounds from last to first one
-  rounds = ['F', 'SF', 'QF', '16R', '32R', '64R', '128R', '256R']
+  # read entire csv
+  matches = SmarterCSV.process("#{path}#{dir_sep}#{file}")
 
-  # Sort matches by rounds within the tourneys
-  sorted_matches = sort_by_attr_set!(matches, rounds)
+  # sort data by tourney date, id, round 
+  # from latest to oldest one
+  sort_matches!(matches)
 
-=begin
-  matches.each do |match|
-    puts match.inspect
-  end
-=end
+  print_m(matches)
 
+  puts
+  check_rounds(matches)
+
+#  preprocessed_data = preprocess_data(matches)
 end
 
 private
 
-# Sort matches by attributes set as a criteria
-def sort_by_attr_set!(matches, attr_set)
-  # Sorted matches to return
-  sorted_matches = Array.new(matches.size, Array.new)
+def sort_matches!(matches)
+  # Set of tourney rounds from final to first ones
+  rounds = ["F", "SF", "QF", "R16", "R32", "R64", "R128", "RR"]
 
-  tourney_dates = matches.map { |match| match["tourney_date"] }.uniq
-  puts tourney_dates.inspect
+  matches.sort_by! { |match| [-(match[:tourney_date].to_i), match[:tourney_id], rounds.index(match[:round].to_s)] }
+end
 
-  tourney_ids = Array.new(tourney_dates.size)
-#  puts tourney_dates_and_ids.inspect
+def preprocess_data(matches)
+  res = Array.new
 
-#  (0...tourney_dates_and_ids.size).each do |i|
-#    tourney_dates_and_ids[i] = Array.new << tourney_dates[i]
-#  end
-
-#  puts tourney_dates_and_ids.inspect
-  tourney_date_ind = 0
-  matches.each do |match|
-    tourney_date_ind += 1 if match["tourney_date"] != tourney_dates[tourney_date_ind]
-    date = tourney_dates[tourney_date_ind]
-    tourney_ids[tourney_date_ind] = Array.new if tourney_ids[tourney_date_ind] == nil
-    id = match["tourney_id"]
-    tourney_ids[tourney_date_ind] << id if 
-        tourney_ids[tourney_date_ind][0] == nil ||
-        !tourney_ids[tourney_date_ind].include?(id)
+  (0...matches.size).each do |ind|
+    curr_match_data = Array.new   
 
 
-  end
-  puts tourney_ids.inspect
-  puts tourney_ids.size
+end
 
-  puts
-  puts tourney_dates.size
+def print_m(matches)
+  id = :tourney_id
+  date = :tourney_date
 
-#  puts sorted_matches.size
-#  puts sorted_matches.inspect
+  matches.each { |match| puts "#{match[id]}  #{match[date]}  #{match[:round]}" }
+end
+
+def check_rounds(matches)
+  uniq_rounds = matches.uniq { |match| match[:round] }
+  print_m(uniq_rounds)
 end
 
 restructure_data

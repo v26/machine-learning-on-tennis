@@ -43,6 +43,6 @@ end
 path = "../data/match_data_downloaded"
 file = "atp_matches_1993.csv"
 
-matches = sort_matches(path, file)
-print_m(matches)
-check_rounds(matches)
+#matches = sort_matches(path, file)
+#print_m(matches)
+#check_rounds(matches)

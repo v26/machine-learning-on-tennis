@@ -1,7 +1,7 @@
 require_relative 'data_sort'
 require 'smarter_csv'
 require 'date'
-
+  
 def preprocess_data
   path = '../data/match_data_downloaded'
   file = 'atp_matches_2017.csv'
@@ -10,7 +10,7 @@ def preprocess_data
 #  print_m(matches)
 #  check_rounds(matches)
   
-  preprocess_matches_2(matches)
+  preprocess_matches(matches)
 end
 
 private
@@ -36,7 +36,7 @@ private
 
 =end
 
-def preprocess_matches_2(matches)
+def preprocess_matches(matches)
   res = []
   # period for previous matches processing, days
   per = 14
@@ -47,6 +47,7 @@ def preprocess_matches_2(matches)
   matches.each_with_index do |match, index|
     winner_matches = get_valid_matches(matches, index, per, num, :winner_name)
     next if winner_matches.nil?
+#    print_data(winner_matches, winner_matches.size)
     loser_matches = get_valid_matches(matches, index, per, num, :loser_name)
     next if loser_matches.nil?
 
@@ -61,7 +62,7 @@ def preprocess_matches_2(matches)
 
 #    write_res(res)
   c += 1
-  break if c == 30
+  break if c == 3
   end
 end
 
@@ -84,47 +85,49 @@ def get_valid_matches(matches, index, per, num, player_name)
 
   matches[(index + 1)...matches.size].each do |prev_match|
     catch :missing_value do
-    prev_date = Date.strptime(prev_match[:tourney_date].to_s, '%Y%m%d')
+      prev_date = Date.strptime(prev_match[:tourney_date].to_s, '%Y%m%d')
 
-    valid_date = (curr_date - prev_date).to_i < per
-    valid_count = match_data.size < num
-    valid_name = curr_name == prev_match[:winner_name] ||
-                 curr_name == prev_match[:loser_name]
+      valid_date = (curr_date - prev_date).to_i < per
+      valid_count = match_data.size < num
+      valid_name = curr_name == prev_match[:winner_name] ||
+                   curr_name == prev_match[:loser_name]
 
-    if valid_date && valid_count
-      if valid_name
-        add_match = {}
+      if valid_date && valid_count
+        if valid_name
+          add_match = {}
 
-        if curr_name == prev_match[:winner_name]
-          headers = headers_to_process.select.with_index { |_, i| i.even? }
-        else
-          headers = headers_to_process.select.with_index { |_, i| i.odd? }
+          if curr_name == prev_match[:winner_name]
+            headers = headers_to_process.select.with_index { |_, i| i.even? }
+          else
+            headers = headers_to_process.select.with_index { |_, i| i.odd? }
+          end
+
+          headers.each do |header|
+            throw :missing_value and return nil if prev_match[header].nil?
+
+            add_match[header] = prev_match[header]
+          end
+          match_data << add_match
         end
-
-        headers.each do |header|
-          throw :missing_value and return nil if prev_match[header].nil?
-
-          add_match[header] = prev_match[header]
-        end
-        match_data << add_match
+      else
+        break
       end
-    else
-      break
-    end
     end
   end
-#  print_data(match_data, 20, *headers_to_process)
+#  print_data(match_data, match_data.size, *headers_to_process)
+  match_data
 end
 
-def print_data(data_set, size = data_set.size, *attributes)
+def print_data(data_set, size, *attributes)
   size = data_set.size if size > data_set.size
   (0...size).each do |i|
     item = data_set[i]
+    attributes = item.keys if attributes.empty?
     attributes.each do |key|
       print "#{item[key]}  "
     end
+  puts if size > 0
   end
-  puts
 end
 
 preprocess_data

@@ -1,48 +1,68 @@
 require 'smarter_csv'
+require 'csv'
 
-def sort_matches(path, file)
-#  path = "../data/match_data_downloaded"
-#  file = "atp_matches_1993.csv"
-  dir_sep = "/"
+module Data_Restruct
+  def sort_matches(path, file)
+    dir_sep = "/"
 
-  # read entire csv
-  matches = SmarterCSV.process("#{path}#{dir_sep}#{file}")
+    # read entire csv
+    matches = SmarterCSV.process("#{path}#{dir_sep}#{file}")
+    sort_matches_hlpr!(matches)
+    matches
+  end
 
-  sort_matches_hlpr!(matches)
+  def print_m(matches)
+    id = :tourney_id
+    date = :tourney_date
 
-#  print_m(matches)
+    matches.each { |match| puts "#{match[id]}  #{match[date]}  #{match[:round]}" }
+  end
 
-#  check_rounds(matches)
-  matches
+  def unite_csv_files(res_file_name, path, *files)
+    headers = CSV.open(path + "/" + files[0]).shift.join(',')
+    File.open(res_file_name, "w") { |csv| csv << headers}
+
+    files.each do |file|
+      sorted_matches = sort_matches(path, file)
+      
+      CSV.open(res_file_name, "a") do |csv|
+        sorted_matches.each { |match| csv << match.values }
+      end
+    end
+  end
+
+  def get_filenames(file_template, first_year, last_year)
+    files = []
+    last_year.downto(first_year).each do |year|
+      files << "#{file_template}#{year}.csv"
+    end
+    files
+  end
+
+  def check_rounds(matches)
+    puts
+    uniq_rounds = matches.uniq { |match| match[:round] }
+    print_m(uniq_rounds)
+  end
+
+  private
+
+  def sort_matches_hlpr!(matches)
+    # set of tourney rounds from final to first ones
+    rounds = ["F", "SF", "QF", "R16", "R32", "R64", "R128", "RR", "BR"]
+
+    # sort data by tourney date, id, round
+    # from latest to oldest one
+    matches.sort_by! do |match|
+      [-(match[:tourney_date].to_i), match[:tourney_id], rounds.index(match[:round].to_s)]
+    end
+  end
 end
 
-def print_m(matches)
-  id = :tourney_id
-  date = :tourney_date
-
-  matches.each { |match| puts "#{match[id]}  #{match[date]}  #{match[:round]}" }
-end
-
-def check_rounds(matches)
-  puts
-  uniq_rounds = matches.uniq { |match| match[:round] }
-  print_m(uniq_rounds)
-end
-
-private
-
-def sort_matches_hlpr!(matches)
-  # set of tourney rounds from final to first ones
-  rounds = ["F", "SF", "QF", "R16", "R32", "R64", "R128", "RR"]
-
-  # sort data by tourney date, id, round
-  # from latest to oldest one
-  matches.sort_by! { |match| [-(match[:tourney_date].to_i), match[:tourney_id], rounds.index(match[:round].to_s)] }
-end
+include Data_Restruct
 
 path = "../data/match_data_downloaded"
-file = "atp_matches_1993.csv"
+file_template = "atp_matches_"
 
-#matches = sort_matches(path, file)
-#print_m(matches)
-#check_rounds(matches)
+files = get_filenames(file_template, 1993, 2018)
+unite_csv_files("atp_matches_1993-2018.csv", path, *files)

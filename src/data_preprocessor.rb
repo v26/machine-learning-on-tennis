@@ -55,11 +55,15 @@ module Data_Preprocessor
 
   def preprocess_data
     path = '../data/match_data_downloaded'
-    file = 'atp_matches_2017.csv'
+    file = 'atp_matches_1993-2018.csv'
 
-    raw_matches = sort_matches(path, file)
-
-    preprocess_matches(raw_matches)
+#    raw_matches = sort_matches(path, file)
+    sorted_matches = SmarterCSV.process(file)
+    sorted_matches.each_with_index do |match, index|
+      puts match.inspect
+      break if index == 5
+    end
+    preprocess_matches(sorted_matches)
   end
 
   private
@@ -115,8 +119,8 @@ module Data_Preprocessor
       end
 
       if !headers_written
-        CSV.open(output_name, 'wb') do |csv|
-          csv << res.keys
+        CSV.open(output_name, 'w') do |csv|
+          csv << res.keys.join(",")
         end
         headers_written = true
       end
@@ -340,8 +344,8 @@ puts res.inspect
   end
 
   def write_res(res, file_name)
-    CSV.open(file_name, 'a+') do |csv|
-      csv << res.values.to_a
+    CSV.open(file_name, 'a') do |csv|
+      csv << res.values.to_a.join(",")
     end
   end
 
@@ -367,4 +371,12 @@ puts res.inspect
 end
 
 include Data_Preprocessor
+include Data_Restruct
+
+path = "../data/match_data_downloaded"
+file_template = "atp_matches_"
+files = get_filenames(file_template, 1993, 2018)
+all_matches_file = "atp_matches_1993-2018.csv"
+
+#unite_csv_files(all_matches_file, path, *files)
 preprocess_data

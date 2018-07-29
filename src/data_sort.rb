@@ -6,27 +6,25 @@ module Data_Restruct
     dir_sep = "/"
 
     # read entire csv
-    matches = SmarterCSV.process("#{path}#{dir_sep}#{file}")
+    matches = SmarterCSV.process("#{path}#{dir_sep}#{file}", remove_empty_values: false, remove_zero_values: false)
+    matches.map do |match|
+      match.keys.each { |key| match[key] = nil if match[key] == "" }
+    end
     sort_matches_hlpr!(matches)
     matches
   end
 
-  def print_m(matches)
-    id = :tourney_id
-    date = :tourney_date
-
-    matches.each { |match| puts "#{match[id]}  #{match[date]}  #{match[:round]}" }
-  end
-
   def unite_csv_files(res_file_name, path, *files)
-    headers = CSV.open(path + "/" + files[0]).shift.join(',')
-    File.open(res_file_name, "w") { |csv| csv << headers}
+    headers = CSV.open(path + "/" + files[0], 'r') { |csv| csv.first }
+    CSV.open(res_file_name, "w") { |csv| csv << headers }
 
     files.each do |file|
       sorted_matches = sort_matches(path, file)
-      
+
       CSV.open(res_file_name, "a") do |csv|
-        sorted_matches.each { |match| csv << match.values }
+        sorted_matches.each do |match|
+          csv << match.values
+        end
       end
     end
   end
@@ -37,12 +35,6 @@ module Data_Restruct
       files << "#{file_template}#{year}.csv"
     end
     files
-  end
-
-  def check_rounds(matches)
-    puts
-    uniq_rounds = matches.uniq { |match| match[:round] }
-    print_m(uniq_rounds)
   end
 
   private
@@ -65,4 +57,4 @@ path = "../data/match_data_downloaded"
 file_template = "atp_matches_"
 
 files = get_filenames(file_template, 1993, 2018)
-unite_csv_files("atp_matches_1993-2018.csv", path, *files)
+#unite_csv_files("atp_matches_1993-2018.csv", path, *files)

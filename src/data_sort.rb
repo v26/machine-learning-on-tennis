@@ -1,7 +1,7 @@
 require 'smarter_csv'
 require 'csv'
 
-module Data_Restruct
+module DataRestruct
   def sort_matches(path, file)
     dir_sep = "/"
 
@@ -51,7 +51,7 @@ module Data_Restruct
   end
 end
 
-include Data_Restruct
+include DataRestruct
 
 path = "../data/match_data_downloaded"
 file_template = "atp_matches_"

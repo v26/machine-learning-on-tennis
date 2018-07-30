@@ -1,9 +1,10 @@
+require 'objspace'
 require_relative 'data_sort'
 require 'smarter_csv'
 require 'csv'
 require 'date'
 
-module Data_Preprocessor
+module DataPreprocessor
 
   # per = period (e.g. last 10 days), 
   # df = double faults,
@@ -53,12 +54,10 @@ module Data_Preprocessor
     :w_2ndwon,           :l_2ndwon,
   ]
 
-  def preprocess_data
+  def preprocess_data(file)
     path = '../data/match_data_downloaded'
-    file = 'atp_matches_1993-2018.csv'
 
-#    raw_matches = sort_matches(path, file)
-    sorted_matches = SmarterCSV.process(file)
+    sorted_matches = SmarterCSV.process(file, {remove_empty_values: false, remove_zero_values: false})
     sorted_matches.each_with_index do |match, index|
       puts match.inspect
       break if index == 5
@@ -69,7 +68,7 @@ module Data_Preprocessor
   private
 
   def preprocess_matches(matches)
-    output_name = "test.csv"
+    output_name = "preprocessed_atp_matches_1993-2018.csv"
     # period for previous matches processing, days
     per = 14
     # number of previous matches to process
@@ -100,18 +99,9 @@ module Data_Preprocessor
       )
       next if loser_matches.nil?
 
-#puts "winner:"
-#puts winner_matches.inspect
-#puts
-#puts "loser:"
-#puts loser_matches.inspect
-#puts
       winner_processed = process_matches(winner_matches)
-#puts
       loser_processed = process_matches(loser_matches)
-#puts
-#puts "!!!"
-#puts
+
       if index % 2 == 0 
         res = get_res(winner_processed, loser_processed, 1)
       else
@@ -120,7 +110,7 @@ module Data_Preprocessor
 
       if !headers_written
         CSV.open(output_name, 'w') do |csv|
-          csv << res.keys.join(",")
+          csv << res.keys
         end
         headers_written = true
       end
@@ -128,6 +118,7 @@ module Data_Preprocessor
 puts res.inspect
       write_res(res, output_name)
       c += 1
+puts c
       break if c == 11
     end
   end
@@ -242,7 +233,6 @@ puts res.inspect
     res[:perc_w_2nd_min] = min(matches, "2ndwon", "1stin", "svpt") { |a, b, c| perc(a, c - b)}
     res[:perc_w_2nd_max] = max(matches, "2ndwon", "1stin", "svpt") { |a, b, c| perc(a, c - b)}
 
-#puts res.inspect
     res
   end
 
@@ -267,7 +257,6 @@ puts res.inspect
     else
       last = last_match[full_attribs[0]]
     end
-#puts "test last: #{attribs} = #{last}"
     last
   end
 
@@ -286,7 +275,6 @@ puts res.inspect
     end
     avg = (sum / matches.size).round(2)
 #      last = get_var[symb]
-#puts "test avg: #{attribs} = #{avg}"
     avg
   end
 
@@ -303,7 +291,6 @@ puts res.inspect
       end
     end
     min = res.min.round(2)
-#puts "test min: #{attribs} = #{min}"
     min
   end
 
@@ -320,7 +307,6 @@ puts res.inspect
       end
     end
     max = res.max.round(2)
-#puts "test max: #{attribs} = #{max}"
     max
   end
 
@@ -328,24 +314,20 @@ puts res.inspect
     res = {}
     p1_data.keys.each do |key|
       key_str = "1/" + key.to_s + "_diff"
-#      res_key = "1/#{key.to_s}_diff".to_sym
       res_key = key_str.to_sym
       p1_val = p1_data[key].to_i
       p2_val = p2_data[key].to_i
       diff = p1_val - p2_val
       
       res[res_key] = diff == 0 ? 0 : (1 / diff.to_f).round(4)
-#puts "#{res_key} = #{res[res_key]}" if res[res_key] < -1 || res[res_key] > 1
     end
     res[:res] = res_flag
-#puts "res:"
-#puts res.inspect
     res
   end
 
   def write_res(res, file_name)
     CSV.open(file_name, 'a') do |csv|
-      csv << res.values.to_a.join(",")
+      csv << res.values
     end
   end
 
@@ -370,8 +352,8 @@ puts res.inspect
   end
 end
 
-include Data_Preprocessor
-include Data_Restruct
+include DataPreprocessor
+include DataRestruct
 
 path = "../data/match_data_downloaded"
 file_template = "atp_matches_"
@@ -379,4 +361,36 @@ files = get_filenames(file_template, 1993, 2018)
 all_matches_file = "atp_matches_1993-2018.csv"
 
 #unite_csv_files(all_matches_file, path, *files)
-preprocess_data
+#preprocess_data(all_matches_file)
+
+#total_chunks = SmarterCSV.process(all_matches_file, {chunk_size: 1, remove_empty_values: false, remove_zero_values: false})
+
+=begin
+i = total_chunks.each
+ic = i.clone
+match = i.next[0]
+puts '1: ' + match[:tourney_id].to_s + "  " + match[:match_num].to_s
+i.next
+i.next
+match1 = i.next[0]
+puts '1: ' + match1[:tourney_id].to_s + "  " + match1[:match_num].to_s
+
+match2 = ic.next[0]
+puts '2: ' + match2[:tourney_id].to_s + "  " + match2[:match_num].to_s
+=end
+
+i = CSV.foreach(all_matches_file, headers: true)
+puts ObjectSpace.memsize_of(i)
+ic = i.clone
+match = i.next
+puts match.inspect
+=begin
+puts '1: ' + match['tourney_id'].to_s + "  " + match['match_num'].to_s
+i.next
+i.next
+match1 = i.next
+puts '1: ' + match1['tourney_id'].to_s + "  " + match1['match_num'].to_s
+
+match2 = ic.next
+puts '2: ' + match2['tourney_id'].to_s + "  " + match2['match_num'].to_s
+=end

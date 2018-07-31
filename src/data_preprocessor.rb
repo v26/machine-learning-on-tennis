@@ -56,29 +56,53 @@ module DataPreprocessor
 
   def preprocess_data(file)
     path = '../data/match_data_downloaded'
+    dest_path = 'preprocessed_data/'
+    puts "reading file..."
+    output_name = "preprocessed_atp_matches_1993-2018.csv"
 
-    sorted_matches = SmarterCSV.process(file, {remove_empty_values: false, remove_zero_values: false})
-    sorted_matches.each_with_index do |match, index|
-      puts match.inspect
-      break if index == 5
+=begin
+    chunk_number = "8200 - 8600"
+    headers_written = false
+    sorted_matches = SmarterCSV.process(dest_path + dest_file, {remove_empty_values: false, remove_zero_values: false})
+    chunk = sorted_matches[8200...8600]
+    preprocess_matches(chunk, headers_written, chunk_number)
+=end
+
+    @@written_matches = 0
+    chunk_number = 0
+    headers_written = false
+
+    total_chunks = SmarterCSV.process(file, {chunk_size: 1000, remove_empty_values: false, remove_zero_values: false})# do |chunk|
+    start_chunk_n = 0
+    end_chunk_n = 55
+    end_chunk_n = end_chunk_n < total_chunks.size ?
+                  end_chunk_n :
+                  total_chunks.size
+
+    chunk_number = start_chunk_n
+    chunks_part = total_chunks[start_chunk_n...end_chunk_n]
+    chunks_part.each do |chunk|
+      puts "preprocessing chunk #{chunk_number}..."
+      dest = dest_path + chunk_number.to_s + output_name
+      preprocess_matches(dest, chunk, headers_written, chunk_number)
+      chunk_number += 1
     end
-    preprocess_matches(sorted_matches)
   end
 
   private
 
-  def preprocess_matches(matches)
-    output_name = "preprocessed_atp_matches_1993-2018.csv"
+  def preprocess_matches(dest, matches, headers_written, chunk_number)
+    dest_path = "preprocessed_data/"
     # period for previous matches processing, days
     per = 14
     # number of previous matches to process
     num_min = 3
     num_max = 10
 
-    headers_written = false
-
     c = 0
     matches.each_with_index do |match, index|
+      c += 1
+      puts "#{chunk_number}   #{c}   #{@@written_matches}"
       winner_matches = get_valid_matches(
         matches,
         index,
@@ -109,17 +133,16 @@ module DataPreprocessor
       end
 
       if !headers_written
-        CSV.open(output_name, 'w') do |csv|
+        CSV.open(dest, 'w') do |csv|
           csv << res.keys
         end
         headers_written = true
       end
 
-puts res.inspect
-      write_res(res, output_name)
-      c += 1
-puts c
-      break if c == 11
+#puts res.inspect
+      write_res(res, dest)
+      @@written_matches += 1
+#      break if c == 11
     end
   end
 
@@ -241,6 +264,7 @@ puts c
   end
 
   def perc(part, full)
+    return 0 if full.to_f == 0
     perc = part.to_f * 100 / full.to_f
     perc.round(2)
   end
@@ -282,16 +306,25 @@ puts c
     args = []
     res = []
     matches.each do |match|
+#puts "attribs:"
+#puts attribs
+#puts matches.inspect
       full_attribs = attribs.map { |attr| attr = match.keys.find { |key| /[\w\d]*#{attr}/ =~ key.to_s }.to_sym }
       args = full_attribs.map { |attr| match[attr]}
       if block_given?
         res << yield(*args)
       else
         res << args[0]
+#puts "res"
+#puts res.inspect
       end
     end
+#puts "res2"
+#puts res.inspect
     min = res.min.round(2)
     min
+#puts "min = #{min}"
+#puts
   end
 
   def max(matches, *attribs)
@@ -361,30 +394,16 @@ files = get_filenames(file_template, 1993, 2018)
 all_matches_file = "atp_matches_1993-2018.csv"
 
 #unite_csv_files(all_matches_file, path, *files)
-#preprocess_data(all_matches_file)
+preprocess_data(all_matches_file)
 
 #total_chunks = SmarterCSV.process(all_matches_file, {chunk_size: 1, remove_empty_values: false, remove_zero_values: false})
 
 =begin
-i = total_chunks.each
-ic = i.clone
-match = i.next[0]
-puts '1: ' + match[:tourney_id].to_s + "  " + match[:match_num].to_s
-i.next
-i.next
-match1 = i.next[0]
-puts '1: ' + match1[:tourney_id].to_s + "  " + match1[:match_num].to_s
-
-match2 = ic.next[0]
-puts '2: ' + match2[:tourney_id].to_s + "  " + match2[:match_num].to_s
-=end
-
 i = CSV.foreach(all_matches_file, headers: true)
 puts ObjectSpace.memsize_of(i)
 ic = i.clone
 match = i.next
 puts match.inspect
-=begin
 puts '1: ' + match['tourney_id'].to_s + "  " + match['match_num'].to_s
 i.next
 i.next

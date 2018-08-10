@@ -162,29 +162,29 @@ parameters = { 'learning_rate' : [0.008],
                'reg_alpha':[1e-3]
              }
 # TODO: Initialize the classifier
-#clf = xgb.XGBClassifier(seed=2)
+clf = xgb.XGBClassifier(seed=2)
 # TODO: Make an f1 scoring function using
 # 'make_scorer'
-#f1_scorer = make_scorer(f1_score,pos_label=1)
+f1_scorer = make_scorer(f1_score,pos_label=1)
 # TODO: Perform grid search on the classifier using
 # the f1_scorer as the scoring method
-#grid_obj = GridSearchCV(clf,
-#                        scoring=f1_scorer,
-#                        param_grid=parameters,
-#                        cv=5)
+grid_obj = GridSearchCV(clf,
+                        scoring=f1_scorer,
+                        param_grid=parameters,
+                        cv=5)
 # TODO: Fit the grid search object to the training
 # data and find the optimal parameters
-#grid_obj = grid_obj.fit(X_train,y_train)
+grid_obj = grid_obj.fit(X_train,y_train)
 # Get the estimator
-#clf = grid_obj.best_estimator_
+clf = grid_obj.best_estimator_
 #print(clf)
 # Report the final F1 score for training and testing
 # after parameter tuning
-#f1, acc = predict_labels(clf, X_train, y_train)
-#print (f"F1 score and accuracy score for training set: {f1:.4f} , {acc:.4f}.")
+f1, acc = predict_labels(clf, X_train, y_train)
+print (f"F1 score and accuracy score for training set: {f1:.4f} , {acc:.4f}.")
 
-#f1, acc = predict_labels(clf, X_test, y_test)
-#print (f"F1 score and accuracy score for test set: {f1:.4f} , {acc:.4f}.")
+f1, acc = predict_labels(clf, X_test, y_test)
+print (f"F1 score and accuracy score for test set: {f1:.4f} , {acc:.4f}.")
 
 
 import keras

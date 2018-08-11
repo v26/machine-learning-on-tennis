@@ -3,13 +3,23 @@ require 'json'
 
 require 'watir'
 stats = []
-puts "1"
 url = 'https://www.myscore.ru/match/n73qG54U/#match-statistics;0'
+data_file_name = "test_output"
+page_file_name = "match_stats_page"
+
+puts "Launching headless Firefox..."
 browser = Watir::Browser.new :firefox, { headless: true, timeout: 120}
-puts "2"
+
+puts "Going to URL..."
 browser.goto url
-puts "3"
+
+puts "Saving html..."
 doc = Nokogiri::HTML.parse(browser.html)
+
+puts "Writing html to file..."
+File.open(page_file_name + ".html","w") do |f|
+  f.write(doc)
+end
 
 doc.css('div#tab-statistics-0-statistic').each do |stats_html|
   @home_values = stats_html.css('.statText--homeValue')
@@ -45,4 +55,8 @@ browser.close
 =end
 
 puts JSON.pretty_generate(stats)
-IO.write('stats.json', JSON.pretty_generate(stats))
+puts "Writing stats to file..."
+File.open(data_file_name + ".json","w") do |f|
+  f.write(stats.to_json)
+#  f.write(JSON.pretty_generate(stats))
+end

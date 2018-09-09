@@ -40,16 +40,29 @@ module StatsParser
   end
 
   def get_match_stats(page, browser)
+#    class="info-status mstat">Завершен</div>
+
     stats = {}
 
     title = get_title(browser)
+
     winner_team = get_winner_team(title)
     loser_team = get_loser_team(winner_team)
+
     stats[:winner_name] = get_name(title, winner_team)
     stats[:loser_name] = get_name(title, loser_team)
+
     stats[:tourney_date] = get_date(page)
+
     save_player_stats(page, winner_team, 'w_', stats)
     save_player_stats(page, loser_team, 'l_', stats)
+
+    website = 'https://www.myscore.ru'
+    winner_url = website + get_player_page(page, winner_team)
+    loser_url = website + get_player_page(page, loser_team)
+
+    save_player_info(browser, winner_url, 'w_', stats)
+    save_player_info(browser, loser_url, 'l_', stats)
 
     stats
   end
@@ -102,15 +115,36 @@ module StatsParser
     (0...values.size).each do |i|
       value_title = value_titles[i].text
       value = values[i].text
-      if value_title == 'Подачи навылет'
+
+      case value_title
+      when 'Подачи навылет'
         value_title = 'ace'
-      elsif value_title == "Двойные ошибки"
+      when 'Двойные ошибки'
         value_title = 'df'
+      when '% первой подачи'
+        value_title = '1stin'
+      when 'Очки выигр. на п.п.'
+        value_title = '1stwon'
+      when 'Очки выигр. на в.п.'
+        value_title = '2ndwon'
       else
         return nil
       end
       
       stats[(prefix + value_title).to_sym] = value
     end
+  end
+
+  def get_player_page(page, team)
+    html_line = page.css("div.tlogo-#{team}").css('a')
+    doc = Nokogiri.parse html_line.to_s
+    url = doc.xpath('//a[@onclick]').first.attributes['onclick'].content.match(/'([^']+)/)[1]
+  end
+
+  def save_player_info(browser, url, prefix, stats)
+    browser.goto url
+    page = Nokogiri::HTML.parse(browser.html)
+    rating = page.css('span.participant-detail-rank').text
+puts rating
   end
 end

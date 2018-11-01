@@ -15,33 +15,38 @@ def get_scheduled_matches_list(url, period, max_num):
     scheduled_matches = get_scheduled_matches_data(url)
 
     parsed_data_dir = '../data/recent_match_data_parsed/'
-    tourney_data_dir = _get_tourney_dir_from_url(url)
-    full_tourney_dir = parsed_data_dir + tourney_data_dir
+    tourney_dir = _get_tourney_dir_from_url(url)
+    full_tourney_dir = parsed_data_dir + tourney_dir
     os.makedirs(full_tourney_dir)
 
     dir_sep = '/'
-    prev_m_str = '_prev_matches'
+#    prev_m_str = '_prev_matches'
 
     for scheduled_match in scheduled_matches:
-        p1_matches, p2_matches = get_prev_matches(scheduled_match, period, max_num)
         p1_name, p2_name = get_players_names(scheduled_match)
+        p1_matches, p2_matches = get_prev_matches(scheduled_match)
+        scheduled_match_date = _get_scheduled_match_date(scheduled_match)
 
-        match_dir = (p1_name + ' vs ' + p2_name).replace(' ', '_')
-        full_match_dir = full_tourney_dir + dir_sep + match_dir.replace(' ', '_')
-        os.makedirs(full_match_dir)
+        scheduled_match_data = {'match_date':scheduled_match_date, 'p1_name':p1_name, 'p2_name':p2_name}
+        data_list = []
+        data_list.append(scheduled_match_data)
+        _write_list_of_dict_to_csv(full_tourney_dir, 'scheduled_matches.csv', 'a', data_list)
+        _write_list_of_dict_to_csv(full_tourney_dir, 'prev_matches.csv', 'a', p1_matches)
+        _write_list_of_dict_to_csv(full_tourney_dir, 'prev_matches.csv', 'a', p2_matches)
+#        match_dir = (p1_name + ' vs ' + p2_name).replace(' ', '_')
+#        full_match_dir = full_tourney_dir + dir_sep + match_dir.replace(' ', '_')
+#        os.makedirs(full_match_dir)
 
-        p1_dir = (p1_name + prev_m_str).replace(' ', '_')
-        p2_dir = (p2_name + prev_m_str).replace(' ', '_')
-        full_p1_dir = full_match_dir + dir_sep + p1_dir
-        full_p2_dir = full_match_dir + dir_sep + p2_dir
-        os.makedirs(full_p1_dir)
-        os.makedirs(full_p2_dir)
+#        p1_dir = (p1_name + prev_m_str).replace(' ', '_')
+#        p2_dir = (p2_name + prev_m_str).replace(' ', '_')
+#        full_p1_dir = full_match_dir + dir_sep + p1_dir
+#        full_p2_dir = full_match_dir + dir_sep + p2_dir
+#        os.makedirs(full_p1_dir)
+#        os.makedirs(full_p2_dir)
 
-        _write_to_csv(full_p1_dir, p1_name + prev_m_str, 'a', p1_matches)
-        _write_to_csv(full_p2_dir, p2_name + prev_m_str, 'a', p2_matches)
+#        _write_to_csv(full_p1_dir, p1_name + prev_m_str, 'a', p1_matches)
+#        _write_to_csv(full_p2_dir, p2_name + prev_m_str, 'a', p2_matches)
 
-#        for prev_match in p1_matches:
-#            _write_headers_to_file(file, headers)
 
 
 def _get_tourney_dir_from_url(url):
@@ -53,25 +58,34 @@ def _get_tourney_dir_from_url(url):
     today = datetime.now()
     today = _truncate_minutes_from_date(today)
 
-    tourney_data_dir = str(today) + ' ' + tourney_name
+    tourney_data_dir = str(today) + '_' + tourney_name
     tourney_data_dir = tourney_data_dir.replace(' ', '_')
     return tourney_data_dir
 
 def _truncate_minutes_from_date(date):
     return str(date.replace(minute=0, second=0, microsecond=0))[:-3]
 
-def _write_headers_to_file(file_name, headers):
-    print('Writing to file', file_name)
-    with open(file_name, "w") as file:
-        file.write(headers)
+def _get_scheduled_match_date(url):
+    soup = _get_soup_from_url(url)
+    table_elem = soup.find('table', attrs={'class':'table_pmatches'})
+    date_elem = table_elem.find_next('td', attrs={'class':'w50'})
+    date = date_elem.text
+    return date
 
-def _write_to_csv(dir, filename, mode, data):
+#def _write_headers_to_file(file_name, headers):
+#    print('Writing to file', file_name)
+#    with open(file_name, "w") as file:
+#        file.write(headers)
+
+def _write_list_of_dict_to_csv(dir, filename, mode, list_of_dict):
+    print('Writing dict to file', filename)
     with open(dir + '/' + filename, mode=mode) as csv_file:
-        fieldnames = data[0].keys()
+        fieldnames = list_of_dict[0].keys()
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-        writer.writeheader()
-        for row in data:
-            writer.writerow(row)
+        if mode == 'w' or (mode == 'a' and os.stat(dir + '/' + filename).st_size == 0):
+            writer.writeheader()
+        for dict in list_of_dict:
+            writer.writerow(dict)
 
 def _write_match_stats(file_name, stats):
     pass
@@ -103,26 +117,28 @@ def _turn_to_url(elem_list):
     url_list = [elem.get('href') for elem in elem_list]
     return url_list
 
-def get_prev_matches(url, period, max_num):
+def get_prev_matches(url):
     page = _get_soup_from_url(url)
 
     curr_date_elem = page.find('td', attrs={'class':'w50'})
 #    print('Current date:', curr_date_elem.text)
 
     print('Getting matches table...')
+    p1_name, p2_name = get_players_names(url)
+
     table_tag = page.find('table', attrs={'class':'table_pmatches_s'})
-    pl1_matches = _get_matches_after(table_tag, curr_date_elem)
+    p1_matches = _get_matches_after(p1_name, table_tag, curr_date_elem)
 
     table_tag = table_tag.find_next('table', attrs={'class':'table_pmatches_s'})
-    pl2_matches = _get_matches_after(table_tag, curr_date_elem)
+    p2_matches = _get_matches_after(p2_name, table_tag, curr_date_elem)
 
-    _remove_intersec(pl1_matches, pl2_matches)
-    _filter_by(period, max_num, pl1_matches, curr_date_elem.text)
-    _filter_by(period, max_num, pl2_matches, curr_date_elem.text)
+    _remove_intersec(p1_matches, p2_matches)
+#    _filter_by(period, max_num, pl1_matches, curr_date_elem.text)
+#    _filter_by(period, max_num, pl2_matches, curr_date_elem.text)
 
-    return pl1_matches, pl2_matches
+    return p1_matches, p2_matches
 
-def _get_matches_after(tag, curr_date_elem):
+def _get_matches_after(player_name, tag, curr_date_elem):
     elem = tag.find_next('td', attrs={'class':'w50'})
 
     player_matches = []
@@ -133,6 +149,7 @@ def _get_matches_after(tag, curr_date_elem):
         match = {}
         match['date'] = elem.text[:8]
 
+        match['player_name'] = player_name
         elem = elem.find_next('td', attrs={'class':'w50'})
         url = elem.find('a').get('href')
         match['match_url'] = url
@@ -146,7 +163,7 @@ def _get_matches_after(tag, curr_date_elem):
 def _remove_intersec(list1, list2):
     counter = 0
     for item in list2:
-        item_indices = [i for i, e in enumerate(list1) if e == item]
+        item_indices = [i for i, e in enumerate(list1) if e['match_url'] == item['match_url']]
         del(list1[item_indices[-1]])
 
 def _filter_by(period, max_num, data, curr_date_str):

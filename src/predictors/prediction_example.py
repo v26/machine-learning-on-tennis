@@ -29,7 +29,7 @@ with warnings.catch_warnings():
   warnings.simplefilter("ignore")
   from sklearn.svm import SVC
 
-data = pd.read_csv('../data/match_data_preprocessed/preprocessed_atp_matches_1993-2018.csv', header=0, sep='\s*,\s*', encoding="ascii", engine='python')
+data = pd.read_csv('data/match_data_preprocessed/preprocessed_atp_matches_1993-2018.csv', header=0, sep='\s*,\s*', encoding="ascii", engine='python')
 
 # Total number of matches.
 n_matches = data.shape[0]

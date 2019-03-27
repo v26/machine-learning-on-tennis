@@ -70,7 +70,7 @@ puts "reading #{file}..."
 
   def sort_matches_hlpr!(matches)
     # set of tourney rounds from final to first ones
-    rounds = ["F", "SF", "QF", "R16", "R32", "R64", "R128", "RR", "BR"]
+    rounds = ["F", "BR", "SF", "QF", "R16", "R32", "R64", "R128", "RR"]
 
     # sort data by tourney date, id, round
     # from latest to oldest one

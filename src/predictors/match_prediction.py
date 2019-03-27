@@ -343,33 +343,36 @@ def train_predict(clf, X_train, y_train, X_test, y_test):
 
 
 
+def main():
+    path = 'data/match_data_preprocessed/'
+    file = 'preprocessed_atp_matches_1993-2018.csv'
+    
+    data = get_data(path, file)
+    X_train, y_train, X_test, y_test = split_data(data, 0.15)
+    
+    #learning_rate = 0.0001
+    opt = keras.optimizers.Adam(lr=0.001)
+    #opt = keras.optimizers.RMSprop(lr=0.008)
+    #opt = keras.optimizers.Adagrad(lr=0.008)
+    #opt = keras.optimizers.Adadelta(lr=1.0)
+    #loss = 'binary_crossentropy'
+    loss = 'categorical_crossentropy'
+    
+    model = get_model(
+                opt,
+                loss)
+    k = 5
+    batch_size = 256
+    epochs = 110
+    #model = train_k_fold(model, X_train, y_train, k, batch_size, epochs)
+    
+    model = get_model(
+                opt,
+                loss)
+    model = train_classifier(model, X_train, y_train, batch_size, epochs)
+    
+    f1, acc = test_classifier_f1(model, X_test, y_test)
+    print (f"F1 score and accuracy score for test set: {f1:.4f} , {acc:.4f}.")
 
-path = '../data/match_data_preprocessed/'
-file = 'preprocessed_atp_matches_1993-2018.csv'
-
-data = get_data(path, file)
-X_train, y_train, X_test, y_test = split_data(data, 0.15)
-
-#learning_rate = 0.0001
-opt = keras.optimizers.Adam(lr=0.001)
-#opt = keras.optimizers.RMSprop(lr=0.008)
-#opt = keras.optimizers.Adagrad(lr=0.008)
-#opt = keras.optimizers.Adadelta(lr=1.0)
-#loss = 'binary_crossentropy'
-loss = 'categorical_crossentropy'
-
-model = get_model(
-            opt,
-            loss)
-k = 5
-batch_size = 256
-epochs = 110
-#model = train_k_fold(model, X_train, y_train, k, batch_size, epochs)
-
-model = get_model(
-            opt,
-            loss)
-model = train_classifier(model, X_train, y_train, batch_size, epochs)
-
-f1, acc = test_classifier_f1(model, X_test, y_test)
-print (f"F1 score and accuracy score for test set: {f1:.4f} , {acc:.4f}.")
+if __name__ == '__main__':
+    main()

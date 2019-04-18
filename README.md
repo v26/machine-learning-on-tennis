@@ -13,3 +13,5 @@ Galaxy J1 + SSH + VDS, linux terminal - nano.
 ##### There is a 'jupyter_notebooks' folder where I plan to describe the design process:
 - Series 1 is dedicated to the first implementation which had been made during the army service;
 - Series 2 will reflect the application of the new (and actually basic for Data Scientist) skills gained.   
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/v26/machine-learning-on-tennis/master)
